@@ -3,7 +3,7 @@ import cv2
 
 class dogmonitor:
     def __init__(self):
-        self.model = YOLO('yolo11s.pt')
+        self.model = YOLO('yolo11x.pt')
         self.traffic_classes = {
             16: 'dog'
         }
