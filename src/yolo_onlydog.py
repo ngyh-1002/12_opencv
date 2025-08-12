@@ -3,7 +3,7 @@ import cv2
 
 class dogmonitor:
     def __init__(self):
-        self.model = YOLO('yolo11n.pt')
+        self.model = YOLO('yolo11s.pt')
         # 오직 'dog' (클래스 ID: 16)만 인식하도록 수정
         self.traffic_classes = {
             16: 'dog'
