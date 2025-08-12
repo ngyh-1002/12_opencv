@@ -3,6 +3,7 @@ import cv2
 
 class dogmonitor:
     def __init__(self):
+        # 가장 정확한 모델인 'yolo11x.pt'를 사용하도록 변경
         self.model = YOLO('yolo11x.pt')
         self.traffic_classes = {
             16: 'dog'
@@ -10,13 +11,15 @@ class dogmonitor:
         self.stats = {'total_detections': 0, 'by_class': {}}
     
     def analyze_frame(self, frame):
-        # model() 대신 model.track()을 사용하여 객체 추적 활성화
+        # model.track()을 사용하여 객체 추적 활성화
         # persist=True: 이전 프레임의 추적 정보를 유지
         # conf=0.3: 신뢰도 임계값을 낮춰 더 많은 객체를 추적하도록 함
+        # imgsz=1280: 모델 입력 이미지 크기를 키워 작은 객체 인식률 향상
         results = self.model.track(
             frame, 
             classes=list(self.traffic_classes.keys()), 
             conf=0.3, 
+            imgsz=1280,
             persist=True, 
             verbose=False
         )
@@ -53,8 +56,10 @@ class dogmonitor:
             if not ret:
                 break
             
+            # 원본 프레임에서 추적 및 인식
             annotated_frame_full, frame_stats = self.analyze_frame(frame)
             
+            # 시각화된 프레임 크기를 절반으로 줄여서 출력
             height, width = annotated_frame_full.shape[:2]
             resized_annotated_frame = cv2.resize(annotated_frame_full, (width // 2, height // 2))
 
