@@ -10,14 +10,21 @@ class dogmonitor:
         self.stats = {'total_detections': 0, 'by_class': {}}
     
     def analyze_frame(self, frame):
-        # 1. 원본 프레임에서 객체 인식 수행
-        results = self.model(frame, 
-                             classes=list(self.traffic_classes.keys()), 
-                             conf=0.3, verbose=False)
+        # model() 대신 model.track()을 사용하여 객체 추적 활성화
+        # persist=True: 이전 프레임의 추적 정보를 유지
+        # conf=0.3: 신뢰도 임계값을 낮춰 더 많은 객체를 추적하도록 함
+        results = self.model.track(
+            frame, 
+            classes=list(self.traffic_classes.keys()), 
+            conf=0.3, 
+            persist=True, 
+            verbose=False
+        )
         
         frame_stats = {'dogs': 0}
         
         if results[0].boxes is not None:
+            # 추적 ID를 포함한 바운딩 박스 정보 처리
             for box in results[0].boxes:
                 class_id = int(box.cls[0])
                 class_name = self.traffic_classes[class_id]
@@ -28,6 +35,7 @@ class dogmonitor:
                 self.stats['by_class'][class_name] = \
                     self.stats['by_class'].get(class_name, 0) + 1
             
+            # 여기서 total_detections는 각 프레임에서 인식된 객체의 총합
             self.stats['total_detections'] += len(results[0].boxes)
         
         return results[0].plot(), frame_stats
@@ -45,12 +53,8 @@ class dogmonitor:
             if not ret:
                 break
             
-            # 2. 원본 프레임에서 인식 후, 결과를 시각화
-            # 'results[0].plot()' 함수가 이미 원본 프레임에 바운딩 박스를 그려서 반환하므로,
-            # 별도의 좌표 변환 과정이 필요 없습니다.
             annotated_frame_full, frame_stats = self.analyze_frame(frame)
             
-            # 3. 시각화된 프레임의 크기를 절반으로 줄여서 출력
             height, width = annotated_frame_full.shape[:2]
             resized_annotated_frame = cv2.resize(annotated_frame_full, (width // 2, height // 2))
 
