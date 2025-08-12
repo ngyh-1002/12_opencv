@@ -4,19 +4,17 @@ import cv2
 class dogmonitor:
     def __init__(self):
         self.model = YOLO('yolo11s.pt')
-        # 오직 'dog' (클래스 ID: 16)만 인식하도록 수정
         self.traffic_classes = {
             16: 'dog'
         }
         self.stats = {'total_detections': 0, 'by_class': {}}
     
     def analyze_frame(self, frame):
-        # 감지할 클래스를 'dog'로 한정
+        # 1. 원본 프레임에서 객체 인식 수행
         results = self.model(frame, 
                              classes=list(self.traffic_classes.keys()), 
-                             conf=0.1, verbose=False)
+                             conf=0.3, verbose=False)
         
-        # 'dogs'만 포함하는 통계 딕셔너리
         frame_stats = {'dogs': 0}
         
         if results[0].boxes is not None:
@@ -24,7 +22,6 @@ class dogmonitor:
                 class_id = int(box.cls[0])
                 class_name = self.traffic_classes[class_id]
                 
-                # 감지된 객체가 'dog'일 경우에만 통계 업데이트
                 if class_id == 16:
                     frame_stats['dogs'] += 1
                 
@@ -36,7 +33,6 @@ class dogmonitor:
         return results[0].plot(), frame_stats
     
     def run_video_monitoring(self, video_path):
-        """웹캠 대신 비디오 파일을 분석하도록 변경된 메서드"""
         cap = cv2.VideoCapture(video_path)
         if not cap.isOpened():
             print(f"오류: 비디오 파일을 열 수 없습니다. 경로를 확인하세요: {video_path}")
@@ -48,19 +44,24 @@ class dogmonitor:
             ret, frame = cap.read()
             if not ret:
                 break
-            height, width = frame.shape[:2]
-            resized_frame = cv2.resize(frame, (width // 2, height // 2))
-            annotated_frame, frame_stats = self.analyze_frame(resized_frame)
             
-            # 정보 표시
+            # 2. 원본 프레임에서 인식 후, 결과를 시각화
+            # 'results[0].plot()' 함수가 이미 원본 프레임에 바운딩 박스를 그려서 반환하므로,
+            # 별도의 좌표 변환 과정이 필요 없습니다.
+            annotated_frame_full, frame_stats = self.analyze_frame(frame)
+            
+            # 3. 시각화된 프레임의 크기를 절반으로 줄여서 출력
+            height, width = annotated_frame_full.shape[:2]
+            resized_annotated_frame = cv2.resize(annotated_frame_full, (width // 2, height // 2))
+
             y = 30
-            cv2.putText(annotated_frame, f"Dogs: {frame_stats['dogs']}", 
+            cv2.putText(resized_annotated_frame, f"Dogs: {frame_stats['dogs']}", 
                         (10, y), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
             y += 30
-            cv2.putText(annotated_frame, f"Total Detected: {self.stats['total_detections']}", 
+            cv2.putText(resized_annotated_frame, f"Total Detected: {self.stats['total_detections']}", 
                         (10, y), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
             
-            cv2.imshow('Dog Monitoring System', annotated_frame)
+            cv2.imshow('Dog Monitoring System', resized_annotated_frame)
             
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
@@ -78,7 +79,5 @@ class dogmonitor:
 
 # 시스템 실행
 monitor = dogmonitor()
-# 여기에 분석하고 싶은 비디오 파일의 경로를 넣어주세요.
-# 예를 들어, 'dog_video.mp4' 파일이 현재 스크립트와 같은 폴더에 있다면
-video_file_path = '../img/Idiot_dogs.mp4' 
+video_file_path = '../img/Idiot_dogs.mp4'
 monitor.run_video_monitoring(video_file_path)
