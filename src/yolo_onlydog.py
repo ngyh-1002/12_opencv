@@ -14,7 +14,7 @@ class dogmonitor:
         # 감지할 클래스를 'dog'로 한정
         results = self.model(frame, 
                              classes=list(self.traffic_classes.keys()), 
-                             conf=0.5, verbose=False)
+                             conf=0.1, verbose=False)
         
         # 'dogs'만 포함하는 통계 딕셔너리
         frame_stats = {'dogs': 0}
